@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>이미지 텍스트 추출</title>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+  <!-- Updated to Tesseract.js 5 for improved accuracy -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,23 +34,39 @@
   <script>
     const imageInput = document.getElementById('imageInput');
     const output = document.getElementById('output');
-    document.getElementById('processBtn').addEventListener('click', () => {
+
+    // Use a dedicated worker for better OCR accuracy
+    const worker = Tesseract.createWorker({ logger: m => console.log(m) });
+
+    (async () => {
+      await worker.load();
+      await worker.loadLanguage('kor+eng');
+      await worker.initialize('kor+eng');
+      await worker.setParameters({
+        tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+      });
+    })();
+
+    document.getElementById('processBtn').addEventListener('click', async () => {
       const file = imageInput.files[0];
       if (!file) {
         output.textContent = '이미지를 선택해주세요.';
         return;
       }
       const reader = new FileReader();
-      reader.onload = () => {
-        Tesseract.recognize(reader.result, 'kor+eng', { logger: m => console.log(m) })
-          .then(result => {
-            output.textContent = result.data.text.trim();
-          })
-          .catch(err => {
-            output.textContent = '오류 발생: ' + err;
-          });
+      reader.onload = async () => {
+        try {
+          const { data: { text } } = await worker.recognize(reader.result);
+          output.textContent = text.trim();
+        } catch (err) {
+          output.textContent = '오류 발생: ' + err;
+        }
       };
       reader.readAsDataURL(file);
+    });
+
+    window.addEventListener('beforeunload', () => {
+      worker.terminate();
     });
   </script>
 </body>
