@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>이미지 텍스트 추출</title>
+  <!-- Updated to Tesseract.js 5 for improved accuracy -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+    }
+    #output {
+      white-space: pre-wrap;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 20px;
+      min-height: 100px;
+    }
+  </style>
+</head>
+<body>
+  <h1>이미지 속 글자 추출</h1>
+  <input type="file" id="imageInput" accept="image/*">
+  <button id="processBtn">추출 시작</button>
+  <div id="output"></div>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const output = document.getElementById('output');
+
+    // Use a dedicated worker for better OCR accuracy
+    const worker = Tesseract.createWorker({ logger: m => console.log(m) });
+
+    (async () => {
+      await worker.load();
+      await worker.loadLanguage('kor+eng');
+      await worker.initialize('kor+eng');
+      await worker.setParameters({
+        tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+      });
+    })();
+
+    document.getElementById('processBtn').addEventListener('click', async () => {
+      const file = imageInput.files[0];
+      if (!file) {
+        output.textContent = '이미지를 선택해주세요.';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const { data: { text } } = await worker.recognize(reader.result);
+          output.textContent = text.trim();
+        } catch (err) {
+          output.textContent = '오류 발생: ' + err;
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    window.addEventListener('beforeunload', () => {
+      worker.terminate();
+    });
+  </script>
+</body>
+</html>
