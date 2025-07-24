@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>NUDGE RUMI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .entry-form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto 20px;
+        }
+        .entry-form select,
+        .entry-form input {
+            padding: 10px;
+            margin: 5px 0;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .entry-form button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .entry-form button:hover {
+            background-color: #45a049;
+        }
+        .timeline {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .entry {
+            background: #fff;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .rumi {
+            text-align: center;
+            margin-top: 40px;
+        }
+        .progress {
+            width: 200px;
+            background: #ddd;
+            border-radius: 20px;
+            margin: 10px auto;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 20px;
+            background: #4CAF50;
+            width: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐘 NUDGE RUMI</h1>
+
+    <div class="entry-form">
+        <label>오늘의 감정</label>
+        <select id="emoji">
+            <option value="😀">😀 행복</option>
+            <option value="😐">😐 보통</option>
+            <option value="😢">😢 슬픔</option>
+            <option value="😡">😡 화남</option>
+            <option value="😰">😰 불안</option>
+        </select>
+        <input id="text" type="text" placeholder="오늘 있었던 일이나 느낌을 적어보세요" />
+        <button onclick="addEntry()">기록하기</button>
+    </div>
+
+    <div class="timeline" id="timeline"></div>
+
+    <div class="rumi">
+        <h2>루미 상태</h2>
+        <p>포인트: <span id="points">0</span></p>
+        <div class="progress">
+            <div class="progress-bar" id="energyBar"></div>
+        </div>
+        <button onclick="feedRumi()">루미에게 먹이주기 (-5포인트)</button>
+    </div>
+
+<script>
+    let entries = JSON.parse(localStorage.getItem('rumi_entries') || '[]');
+    let points = parseInt(localStorage.getItem('rumi_points') || '0');
+    let energy = parseInt(localStorage.getItem('rumi_energy') || '50');
+
+    function saveState() {
+        localStorage.setItem('rumi_entries', JSON.stringify(entries));
+        localStorage.setItem('rumi_points', points);
+        localStorage.setItem('rumi_energy', energy);
+    }
+
+    function addEntry() {
+        const emoji = document.getElementById('emoji').value;
+        const text = document.getElementById('text').value.trim();
+        if (!text) return;
+        const entry = {
+            date: new Date().toLocaleString(),
+            emoji,
+            text
+        };
+        entries.unshift(entry);
+        points += 1;
+        update();
+        saveState();
+        document.getElementById('text').value = '';
+    }
+
+    function feedRumi() {
+        if (points < 5 || energy >= 100) return;
+        points -= 5;
+        energy = Math.min(100, energy + 20);
+        update();
+        saveState();
+    }
+
+    function update() {
+        document.getElementById('points').innerText = points;
+        document.getElementById('energyBar').style.width = energy + '%';
+        const container = document.getElementById('timeline');
+        container.innerHTML = '';
+        entries.forEach(e => {
+            const div = document.createElement('div');
+            div.className = 'entry';
+            div.innerHTML = `<strong>${e.date}</strong> ${e.emoji}<br>${e.text}`;
+            container.appendChild(div);
+        });
+    }
+
+    update();
+</script>
+</body>
+</html>
